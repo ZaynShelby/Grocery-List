@@ -4,14 +4,14 @@ enum Categories {
   category,
   vegetables,
   fruits,
-  meat,
+  meats,
   dairy,
   carbs,
   sweets,
   spices,
   convenience,
   hygiene,
-  other,
+  others,
 }
 
 class Category {

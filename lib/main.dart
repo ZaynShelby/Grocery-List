@@ -9,6 +9,13 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: GroceryList());
+    return MaterialApp(
+      theme: ThemeData(scaffoldBackgroundColor: Colors.grey[100]),
+      darkTheme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black54,
+      ),
+      themeMode: ThemeMode.system,
+      home: GroceryList(),
+    );
   }
 }
