@@ -31,14 +31,27 @@ class _GroceryListState extends State<GroceryList> {
   }
 
   void _removeItems(GroceryItem item) {
+    final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Item removed !'),
-        action: SnackBarAction(label: 'Undo', onPressed: () {}),
+        backgroundColor: item.category.color,
+        content: Text(
+          'Item removed !',
+          style: GoogleFonts.lexendDeca(color: Colors.black),
+        ),
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: Colors.black,
+          onPressed: () {
+            setState(() {
+              _groceryItems.insert(index, item);
+            });
+          },
+        ),
       ),
     );
   }
@@ -57,13 +70,15 @@ class _GroceryListState extends State<GroceryList> {
         padding: const EdgeInsets.all(8.0),
         child: ListView.builder(
           itemCount: _groceryItems.length,
-          itemBuilder: (context, index) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Dismissible(
-              onDismissed: (duration) {
-                _removeItems(_groceryItems[index]);
-              },
-              key: ValueKey(_groceryItems[index].id),
+          itemBuilder: (context, index) => Dismissible(
+            onDismissed: (duration) {
+              _removeItems(_groceryItems[index]);
+            },
+            key: ValueKey(_groceryItems[index].id),
+            child: Card(
+              shape: UnderlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               child: ListTile(
                 shape: UnderlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -80,11 +95,24 @@ class _GroceryListState extends State<GroceryList> {
                 ),
                 title: Text(
                   _groceryItems[index].name,
-                  style: GoogleFonts.encodeSans(
+                  style: GoogleFonts.inder(
                     color: Colors.black,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Net: ${_groceryItems[index].quantity}',
+                      style: GoogleFonts.notoSansDisplay(color: Colors.black),
+                    ),
+                    Text(
+                      'Amt: ${_groceryItems[index].amount}',
+                      style: GoogleFonts.notoSansDisplay(color: Colors.black),
+                    ),
+                  ],
                 ),
               ),
             ),

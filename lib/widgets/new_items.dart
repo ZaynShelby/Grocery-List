@@ -202,7 +202,10 @@ class _NewItemsState extends State<NewItems> {
                         onPressed: () {
                           _formKey.currentState!.reset();
                         },
-                        child: Text('Reset', style: GoogleFonts.museoModerno()),
+                        child: Text(
+                          'Reset',
+                          style: GoogleFonts.museoModerno(color: Colors.white),
+                        ),
                       ),
                     ),
                   ],
@@ -215,7 +218,10 @@ class _NewItemsState extends State<NewItems> {
                   color: Colors.white70,
                   child: Text(
                     'Save',
-                    style: GoogleFonts.museoModerno(fontSize: 25),
+                    style: GoogleFonts.museoModerno(
+                      fontSize: 25,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
               ],

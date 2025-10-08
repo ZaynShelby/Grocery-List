@@ -55,6 +55,6 @@ const categories = {
   Categories.others: Category(
     title: 'Others',
     color: Colors.cyanAccent,
-    image: 'lib/images/other_category.png',
+    image: 'lib/images/other_grocery.png',
   ),
 };
