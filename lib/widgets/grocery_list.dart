@@ -17,6 +17,8 @@ class GroceryList extends StatefulWidget {
 class _GroceryListState extends State<GroceryList> {
   late List<GroceryItem> _groceryItems = [];
   var isLoading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -28,28 +30,51 @@ class _GroceryListState extends State<GroceryList> {
       'flutter-grocery-54079-default-rtdb.firebaseio.com',
       'Groceries.json',
     );
-    final response = await http.get(url);
-    final Map<String, dynamic> listData = json.decode(response.body);
-    final List<GroceryItem> _loadeditems = [];
-    for (final item in listData.entries) {
-      final category = categories.entries
-          .firstWhere(
-            (catItem) => catItem.value.title == item.value['category'],
-          )
-          .value;
-      _loadeditems.add(
-        GroceryItem(
-          id: item.key,
-          name: item.value['name'],
-          quantity: item.value['quantity'],
-          amount: item.value['amount'],
-          category: category,
-        ),
-      );
+    try {
+      final response = await http.get(url);
+      if (response.statusCode >= 400) {
+        setState(() {
+          _error = 'Failed to Fetch Data! plz try again';
+          isLoading = false;
+        });
+      }
+      if (response.body == 'null') {
+        setState(() {
+          isLoading = false;
+          _groceryItems = [];
+        });
+        return;
+      }
+      final Map<String, dynamic> listData = json.decode(response.body);
+      final List<GroceryItem> _loadeditems = [];
+      for (final item in listData.entries) {
+        final category = categories.entries
+            .firstWhere(
+              (catItem) => catItem.value.title == item.value['category'],
+            )
+            .value;
+        _loadeditems.add(
+          GroceryItem(
+            id: item.key,
+            name: item.value['name'],
+            quantity: item.value['quantity'],
+            amount: item.value['amount'],
+            category: category,
+          ),
+        );
+      }
+      setState(() {
+        _groceryItems = _loadeditems;
+        setState(() {
+          isLoading = false;
+        });
+      });
+    } catch (error) {
+      setState(() {
+        _error = 'Error: $error';
+        isLoading = false;
+      });
     }
-    setState(() {
-      _groceryItems = _loadeditems;
-    });
   }
 
   void _addItems() async {
@@ -70,30 +95,47 @@ class _GroceryListState extends State<GroceryList> {
     });
   }
 
-  void _removeItems(GroceryItem item) {
+  void _removeItems(GroceryItem item) async {
     final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: item.category.color,
-        content: Text(
-          'Item removed !',
-          style: GoogleFonts.lexendDeca(color: Colors.black),
-        ),
-        action: SnackBarAction(
-          label: 'Undo',
-          textColor: Colors.black,
-          onPressed: () {
-            setState(() {
-              _groceryItems.insert(index, item);
-            });
-          },
-        ),
-      ),
+    final url = Uri.https(
+      'flutter-grocery-54079-default-rtdb.firebaseio.com',
+      'Groceries/${item.id}.json',
     );
+    final response = await http.delete(url);
+    if (response.statusCode < 400) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: item.category.color,
+          content: Text(
+            '${item.name} removed !',
+            style: GoogleFonts.lexendDeca(color: Colors.black),
+          ),
+        ),
+      );
+      setState(() {
+        _groceryItems.remove(item);
+      });
+    }
+    if (response.statusCode >= 400) {
+      setState(() {
+        _groceryItems.insert(index, item);
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: item.category.color,
+          content: Text(
+            '${item.name} failed to remove!',
+            style: GoogleFonts.lexendDeca(color: Colors.black),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -161,6 +203,15 @@ class _GroceryListState extends State<GroceryList> {
               ),
             ),
           ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      content = Center(
+        child: Text(
+          _error!,
+          style: GoogleFonts.notoSerif(color: Colors.red, fontSize: 20),
         ),
       );
     }
