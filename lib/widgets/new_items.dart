@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:grocery_items/data/categories.dart';
 import 'package:grocery_items/models/category.dart';
 import 'package:grocery_items/models/groceries.dart';
+import 'package:http/http.dart' as http;
 
 class NewItems extends StatefulWidget {
   const NewItems({super.key});
@@ -11,18 +14,41 @@ class NewItems extends StatefulWidget {
 }
 
 class _NewItemsState extends State<NewItems> {
+  var isSending = false;
+
   final _formKey = GlobalKey<FormState>();
   var _enteredName = '';
   var _enteredQuantity = '';
   var _enteredAmount = 1;
   var _selectedCategory = categories[Categories.category]!;
 
-  void _saveItem() {
+  void _saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      setState(() {
+        isSending = true;
+      });
+      final url = Uri.https(
+        'flutter-grocery-54079-default-rtdb.firebaseio.com',
+        'Groceries.json',
+      );
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'Application/json'},
+        body: json.encode({
+          'name': _enteredName,
+          'quantity': _enteredQuantity,
+          'amount': _enteredAmount,
+          'category': _selectedCategory.title,
+        }),
+      );
+      final Map<String, dynamic> resData = json.decode(response.body);
+
+      if (!mounted) return;
+
       Navigator.of(context).pop(
         GroceryItem(
-          id: DateTime.now().toString(),
+          id: resData['name'],
           name: _enteredName,
           quantity: _enteredQuantity,
           amount: _enteredAmount,
@@ -35,12 +61,18 @@ class _NewItemsState extends State<NewItems> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.black,
-      body: Form(
-        key: _formKey,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 100),
-          child: SingleChildScrollView(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Form(
+            key: _formKey,
             child: Column(
               children: [
                 Row(
@@ -72,9 +104,9 @@ class _NewItemsState extends State<NewItems> {
                   validator: (value) {
                     if (value == null ||
                         value.isEmpty ||
-                        value.trim().length >= 50 ||
-                        value.trim().length <= 1) {
-                      return "Value must be length more than 1 and less than 50";
+                        value.trim().length > 50 ||
+                        value.trim().length < 2) {
+                      return "Value must be length more than 2 and less than 50";
                     }
                     return null;
                   },
@@ -90,6 +122,7 @@ class _NewItemsState extends State<NewItems> {
                 ),
                 SizedBox(height: 20),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
                       child: TextFormField(
@@ -106,7 +139,7 @@ class _NewItemsState extends State<NewItems> {
                         style: GoogleFonts.encodeSans(color: Colors.white),
                         decoration: InputDecoration(
                           hint: Text(
-                            '1 kg, g, dzn, ltr, pcs, pkt',
+                            'e.g : 1 kg, g, dzn, ltr, pcs, pkt',
                             style: GoogleFonts.inder(color: Colors.lightGreen),
                           ),
                           label: Text(
@@ -200,7 +233,7 @@ class _NewItemsState extends State<NewItems> {
                           backgroundColor: Colors.red,
                         ),
                         onPressed: () {
-                          _formKey.currentState!.reset();
+                          isSending ? null : _formKey.currentState!.reset();
                         },
                         child: Text(
                           'Reset',
@@ -214,15 +247,21 @@ class _NewItemsState extends State<NewItems> {
                 MaterialButton(
                   height: 50,
                   minWidth: 300,
-                  onPressed: _saveItem,
+                  onPressed: isSending ? null : _saveItem,
                   color: Colors.white70,
-                  child: Text(
-                    'Save',
-                    style: GoogleFonts.museoModerno(
-                      fontSize: 25,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  child: isSending
+                      ? SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(),
+                        )
+                      : Text(
+                          'Save',
+                          style: GoogleFonts.museoModerno(
+                            fontSize: 25,
+                            color: Colors.black87,
+                          ),
+                        ),
                 ),
               ],
             ),

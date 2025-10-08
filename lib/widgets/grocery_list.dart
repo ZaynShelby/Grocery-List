@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:grocery_items/data/categories.dart';
 import 'package:grocery_items/models/groceries.dart';
 import 'package:grocery_items/widgets/new_items.dart';
+import 'package:http/http.dart' as http;
 
 class GroceryList extends StatefulWidget {
   const GroceryList({super.key});
@@ -11,7 +15,43 @@ class GroceryList extends StatefulWidget {
 }
 
 class _GroceryListState extends State<GroceryList> {
-  final List<GroceryItem> _groceryItems = [];
+  late List<GroceryItem> _groceryItems = [];
+  var isLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
+
+  void _loadItems() async {
+    final url = Uri.https(
+      'flutter-grocery-54079-default-rtdb.firebaseio.com',
+      'Groceries.json',
+    );
+    final response = await http.get(url);
+    final Map<String, dynamic> listData = json.decode(response.body);
+    final List<GroceryItem> _loadeditems = [];
+    for (final item in listData.entries) {
+      final category = categories.entries
+          .firstWhere(
+            (catItem) => catItem.value.title == item.value['category'],
+          )
+          .value;
+      _loadeditems.add(
+        GroceryItem(
+          id: item.key,
+          name: item.value['name'],
+          quantity: item.value['quantity'],
+          amount: item.value['amount'],
+          category: category,
+        ),
+      );
+    }
+    setState(() {
+      _groceryItems = _loadeditems;
+    });
+  }
+
   void _addItems() async {
     final newItem = await Navigator.of(context).push(
       PageRouteBuilder(
@@ -64,6 +104,10 @@ class _GroceryListState extends State<GroceryList> {
         style: GoogleFonts.notoSerif(fontSize: 20, color: Colors.white54),
       ),
     );
+
+    if (isLoading) {
+      content = Center(child: CircularProgressIndicator());
+    }
 
     if (_groceryItems.isNotEmpty) {
       content = Padding(
